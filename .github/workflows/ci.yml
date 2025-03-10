@@ -29,16 +29,16 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-    - name: Install the latest version of uv
-      uses: astral-sh/setup-uv@v5
-      with:
-        version: "latest"
     - name: Setup Python
       uses: actions/setup-python@v5
       id: setup-python
       with:
         python-version: '3.x'
         check-latest: true
+    - name: Install the latest version of uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        version: "latest"
     - name: Install Python dependencies
       run: uv pip install -r requirements.txt
     - name: Read Julia version
