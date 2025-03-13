@@ -9,9 +9,9 @@ using SHA
 end
 
 # Strip SVG output from a Jupyter notebook
-@everywhere function strip_svg(ipynb)
-    oldfilesize = filesize(ipynb)
-    nb = open(JSON.parse, ipynb, "r")
+@everywhere function strip_svg(nbpath)
+    oldfilesize = filesize(nbpath)
+    nb = open(JSON.parse, nbpath, "r")
     for cell in nb["cells"]
         !haskey(cell, "outputs") && continue
         for output in cell["outputs"]
@@ -23,33 +23,71 @@ end
             end
         end
     end
-    write(ipynb, JSON.json(nb, 1))
-    @info "Stripped SVG in $(ipynb). The original size is $(oldfilesize). The new size is $(filesize(ipynb))."
-    return ipynb
+    write(nbpath, JSON.json(nb, 1))
+    @info "Stripped SVG in $(nbpath). The original size is $(oldfilesize). The new size is $(filesize(nbpath))."
+    return nbpath
 end
 
-# Remove cached notebook and sha files if there is no corresponding notebook
+"Remove cached notebook and sha files if there is no corresponding notebook"
 function clean_cache(cachedir)
-    for (root, dirs, files) in walkdir(cachedir)
+    for (root, _, files) in walkdir(cachedir)
         for file in files
-            if endswith(file, ".ipynb") || endswith(file, ".sha")
-                fn = joinpath(joinpath(splitpath(root)[2:end]), splitext(file)[1])
-                nb = fn * ".ipynb"
-                lit = fn * ".jl"
+            fn, ext = splitext(file)
+            if ext == ".sha"
+                target = joinpath(joinpath(splitpath(root)[2:end]), fn)
+                nb = target * ".ipynb"
+                lit = target * ".jl"
                 if !isfile(nb) && !isfile(lit)
-                    fullfn = joinpath(root, file)
-                    @info "Notebook $(nb) or $(lit) not found. Removing $(fullfn)."
-                    rm(fullfn)
+                    cachepath = joinpath(root, fn)
+                    @info "Notebook $(nb) or $(lit) not found. Removing $(cachepath) SHA and notebook."
+                    rm(cachepath * ".sha")
+                    rm(cachepath * ".ipynb"; force=true)
                 end
             end
         end
     end
 end
 
-"Recursively list Literate notebooks. Also process caching."
+"Convert a Jupyter notebook into a Literate notebook. Adapted from https://github.com/JuliaInterop/NBInclude.jl."
+function to_literate(nbpath; shell_or_help = r"^\s*[;?]")
+    nb = open(JSON.parse, nbpath, "r")
+    jlpath = splitext(nbpath)[1] * ".jl"
+    open(jlpath, "w") do io
+        separator = ""
+        for cell in nb["cells"]
+            if cell["cell_type"] == "code"
+                s = join(cell["source"])
+                isempty(strip(s)) && continue # Jupyter doesn't number empty cells
+                occursin(shell_or_help, s) && continue  # Skip cells with shell and help commands
+                print(io, separator, "#---\n", s)  # Literate code block mark
+                separator = "\n\n"
+            elseif cell["cell_type"] == "markdown"
+                txt = join(cell["source"])
+                print(io, separator, "#===\n", txt, "\n===#")
+                separator = "\n\n"
+            end
+        end
+    end
+    return jlpath
+end
+
+"Convert Jupyter notebooks into Literate notebooks in a dir tree"
+function convert_ipynb_to_literate(basedir)
+    for (root, _, files) in walkdir(basedir)
+        for file in files
+            name, ext = splitext(file)
+            if ext == ".ipynb"
+                nb = joinpath(root, file)
+                to_literate(nb)
+            end
+        end
+    end
+end
+
+"Recursively list Jupyter and Literate notebooks. Also process caching."
 function list_notebooks(basedir, cachedir)
     litnbs = String[]
-    for (root, dirs, files) in walkdir(basedir)
+    for (root, _, files) in walkdir(basedir)
         for file in files
             name, ext = splitext(file)
             if ext == ".jl"
@@ -83,31 +121,37 @@ end
 function main(;
     basedir=get(ENV, "DOCDIR", "docs"),
     cachedir=get(ENV, "NBCACHE", ".cache"),
-    rmsvg=true
-)
+    rmsvg=true)
 
     mkpath(cachedir)
     clean_cache(cachedir)
+    convert_ipynb_to_literate(basedir)
     litnbs = list_notebooks(basedir, cachedir)
-    # Execute literate notebooks in worker process(es)
-    ts_lit = pmap(litnbs; on_error=ex -> NaN) do nb
-        @elapsed run_literate(nb, cachedir; rmsvg)
-    end
-    rmprocs(workers()) # Remove worker processes to release some memory
-    # Debug notebooks one by one if there are errors
-    for (nb, t) in zip(litnbs, ts_lit)
-        if isnan(t)
-            println("Debugging notebook: ", nb)
-            try
-                withenv("JULIA_DEBUG" => "Literate") do
-                    run_literate(nb, cachedir; rmsvg)
+
+    if !isempty(litnbs)
+        # Execute literate notebooks in worker process(es)
+        ts_lit = pmap(litnbs; on_error=ex -> NaN) do nb
+            @elapsed run_literate(nb, cachedir; rmsvg)
+        end
+        rmprocs(workers()) # Remove worker processes to release some memory
+
+        # Debug notebooks one by one if there are errors
+        for (nb, t) in zip(litnbs, ts_lit)
+            if isnan(t)
+                println("Debugging notebook: ", nb)
+                try
+                    withenv("JULIA_DEBUG" => "Literate") do
+                        run_literate(nb, cachedir; rmsvg)
+                    end
+                catch e
+                    println(e)
                 end
-            catch e
-                println(e)
             end
         end
+        any(isnan, ts_lit) && error("Please check notebook error(s).")
+    else
+        ts_lit = []
     end
-    any(isnan, ts_lit) && error("Please check literate notebook error(s).")
 
     # Print execution result
     Tables.table([litnbs ts_lit]; header=["Notebook", "Elapsed (s)"]) |> markdown_table(String) |> print
