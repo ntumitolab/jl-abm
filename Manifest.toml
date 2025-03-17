@@ -46,9 +46,9 @@ version = "0.1.42"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
-git-tree-sha1 = "cd8b948862abee8f3d3e9b73a102a9ca924debb0"
+git-tree-sha1 = "f7817e2e585aa6d924fd714df1e2a84be7896c60"
 uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
-version = "4.2.0"
+version = "4.3.0"
 weakdeps = ["SparseArrays", "StaticArrays"]
 
     [deps.Adapt.extensions]
@@ -594,9 +594,9 @@ version = "0.2.1"
 
 [[deps.HypergeometricFunctions]]
 deps = ["LinearAlgebra", "OpenLibm_jll", "SpecialFunctions"]
-git-tree-sha1 = "2bd56245074fab4015b9174f24ceba8293209053"
+git-tree-sha1 = "68c173f4f449de5b438ee67ed0c9c748dc31a2ec"
 uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
-version = "0.3.27"
+version = "0.3.28"
 
 [[deps.ImageAxes]]
 deps = ["AxisArrays", "ImageBase", "ImageCore", "Reexport", "SimpleTraits"]
@@ -679,10 +679,10 @@ weakdeps = ["Unitful"]
     InterpolationsUnitfulExt = "Unitful"
 
 [[deps.IntervalArithmetic]]
-deps = ["CRlibm_jll", "LinearAlgebra", "MacroTools", "RoundingEmulator"]
-git-tree-sha1 = "0fcf2079f918f68c6412cab5f2679822cbd7357f"
+deps = ["CRlibm_jll", "LinearAlgebra", "MacroTools", "OpenBLASConsistentFPCSR_jll", "RoundingEmulator"]
+git-tree-sha1 = "7b3603d3a5c52bcb18de8e46fa62e4176055f31e"
 uuid = "d1acc4aa-44c8-5952-acd4-ba5d80a2a253"
-version = "0.22.23"
+version = "0.22.25"
 
     [deps.IntervalArithmetic.extensions]
     IntervalArithmeticDiffRulesExt = "DiffRules"
@@ -1088,6 +1088,12 @@ git-tree-sha1 = "a5a5a68d079ce531b0220e99789e0c1c8c5ed215"
 uuid = "925886fa-5bf2-5e8e-b522-a9147a512338"
 version = "1.7.1"
 
+[[deps.OpenBLASConsistentFPCSR_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "567515ca155d0020a45b05175449b499c63e7015"
+uuid = "6cdc7f73-28fd-5e50-80fb-958a8875b1af"
+version = "0.3.29+0"
+
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
@@ -1432,9 +1438,9 @@ version = "0.9.4"
 
 [[deps.SimpleWeightedGraphs]]
 deps = ["Graphs", "LinearAlgebra", "Markdown", "SparseArrays"]
-git-tree-sha1 = "4b33e0e081a825dbfaf314decf58fa47e53d6acb"
+git-tree-sha1 = "3e5f165e58b18204aed03158664c4982d691f454"
 uuid = "47aef6b3-ad0c-573a-a1e2-d07658019622"
-version = "1.4.0"
+version = "1.5.0"
 
 [[deps.Sixel]]
 deps = ["Dates", "FileIO", "ImageCore", "IndirectArrays", "OffsetArrays", "REPL", "libsixel_jll"]
