@@ -12,3 +12,4 @@ chapters:
   - file: 06-osmabm
   - file: 07-abm-diffeq
   - file: 08-cellistmap
+  - file: 09-celldiv
