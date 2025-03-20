@@ -3,10 +3,9 @@
 
 https://juliadynamics.github.io/Agents.jl/stable/examples/delaunay/
 
-Using Agents.jl and https://github.com/JuliaGeometry/DelaunayTriangulation.jl
+Using https://github.com/JuliaDynamics/Agents.jl and https://github.com/JuliaGeometry/DelaunayTriangulation.jl
 ===#
 
-# Define agents (3 colors of cells)
 using Agents
 using StaticArrays
 import DelaunayTriangulation as DT
@@ -15,7 +14,10 @@ using LinearAlgebra
 using StreamSampling
 using Random
 using StatsBase
+using CairoMakie
+CairoMakie.activate!(px_per_unit = 1.0)
 
+# Define agents (3 colors of cells)
 @enum CellType begin
     Red
     Blue
@@ -35,86 +37,60 @@ DT.number_type(::Type{Cell}) = Float64
 DT.number_type(::Type{Vector{Cell}}) = Float64
 DT.is_point2(::Cell) = true
 
-# Define model parameters as functions
-spring_constant(p, q) = 20.0 # μ
-heterotypic_spring_constant(p, q) = p.color == q.color ? 1.0 : 0.1 # μₕₑₜ
-drag_coefficient(p) = 1 / 2 # η
-mature_cell_spring_rest_length(p, q) = 1.0 # s
-expansion_rate(p, q) = 0.05 * mature_cell_spring_rest_length(p, q) # ε
-perturbation(p) = 0.01 # ξ
-cutoff_distance(p, q) = 1.5 # ℓₘₐₓ
-intrinsic_proliferation_rate(p) = p.color == Red ? 0.4 : p.color == Blue ? 0.5 : 0.8 # β
-carrying_capacity_density(p) = 100.0^2 # K
-min_division_age(p) = 1.0 # tₘᵢₙ
-max_division_age(p) = p.color == Red ? 15.0 : p.color == Blue ? 20.0 : 3.0 # tₘₐₓ
-max_age(p) = p.color == Red ? 10.0 : p.color == Blue ? 10.0 : 3.0 # dₘₐₓ
-death_rate(p) = p.color == Red ? 0.001 : p.color == Blue ? 0.00005 : 0.0001 # psick
-mutation_probability(p) = p.color == Red ? 0.3 : p.color == Blue ? 0.5 : 0.05 # pₘᵤₜ
-min_area(p) = 1e-2 # Aₘᵢₙ
-
 # Compute parameters for a pair of cells
 spring_constant(model, i::Int, j::Int, t) = spring_constant(model, model[i], model[j], t)
-function spring_constant(model, p, q, t)
+function spring_constant(model, p::Cell, q::Cell, t; μ=20.0)
     δ = norm(p.pos - q.pos)
     s = rest_length(model, p, q, t)
-    μ = spring_constant(p, q)
-    t < 1 && return μ # no adhesion for the initial population
-    μₕₑₜ = heterotypic_spring_constant(p, q)
-    if δ > s
-        return μₕₑₜ * μ
-    else
-        return μ
-    end
+    t < 1 && return μ ## no adhesion for the initial population
+    μₕₑₜ = ifelse(p.color == q.color, 1.0, 0.1) ## heterotypic_spring_constant
+    return ifelse(δ > s, μₕₑₜ * μ, μ)
 end
 
 #---
 rest_length(model, i::Int, j::Int, t) = rest_length(model, model[i], model[j]..., t)
-function rest_length(model, p, q, t)
-    s = mature_cell_spring_rest_length(p, q)
-    ε = expansion_rate(p, q)
+function rest_length(model, p, q, t;
+    s=1.0,  ## mature_cell_spring_rest_length
+    ε=0.05, ## expansion_rate
+)
     return min(s, (s - ε) * t + ε)
 end
 
 #---
-function proliferation_rate(model, i::Int, t)
+function proliferation_rate(model, i::Int, t; tₘᵢₙ = 1.0, K=100.0^2, Aₘᵢₙ=0.01)
     p = model[i]
     age = t - p.birth
-    tₘᵢₙ = min_division_age(p)
-    tₘₐₓ = max_division_age(p)
+    tₘₐₓ = p.color == Red ? 15.0 : p.color == Blue ? 20.0 : 3.0
     A = get_area(model.tessellation, i)
-    if age ≤ tₘᵢₙ || age ≥ tₘₐₓ || A < min_area(p)
+    if age ≤ tₘᵢₙ || age ≥ tₘₐₓ || A < Aₘᵢₙ
         return 0.0
     end
-    vorn = model.tessellation
-    Aᵢ = get_area(vorn, i)
-    β = intrinsic_proliferation_rate(p)
-    K = carrying_capacity_density(p)
+    Aᵢ = get_area(model.tessellation, i)
+    β = p.color == Red ? 0.4 : p.color == Blue ? 0.5 : 0.8
     return max(0.0, β * (1 - 1 / (K * Aᵢ)))
 end
 
 # Forces between two cells
 force(model, i::Int, j::Int, t) = force(model, model[i], model[j], t)
-function force(model, p, q, t)
-    δ = norm(p.pos - q.pos)
-    if δ > cutoff_distance(p, q)
+function force(model, p::Cell, q::Cell, t; ℓₘₐₓ = 1.5)
+    rᵢⱼ = q.pos - p.pos
+    δ = norm(rᵢⱼ)
+    if δ > ℓₘₐₓ
         return SVector(0.0, 0.0)
     end
     μ = spring_constant(model, p, q, t)
     s = rest_length(model, p, q, t)
-    rᵢⱼ = q.pos - p.pos
-    return μ * (norm(rᵢⱼ) - s) * rᵢⱼ / norm(rᵢⱼ)
+    return μ * (δ - s) * rᵢⱼ / δ
 end
 
 # Final random tug
-function random_force(model, i)
+function random_force(model, i::Int; ξ=0.01)
     p = model[i]
-    ξ = perturbation(p)
-    η₁, η₂ = randn(), randn()
     Δt = model.dt
-    return sqrt(2ξ / Δt) * SVector(η₁, η₂)
+    return sqrt(2ξ / Δt) * SVector(randn(), randn())
 end
 
-# Forces acting on one cell
+# Accumulate forces acting on one cell
 function force(model, i::Int, t)
     F = SVector(0.0, 0.0)
     for j in get_neighbours(model.triangulation, i)
@@ -126,9 +102,9 @@ function force(model, i::Int, t)
 end
 
 # Cell movement velocity
-velocity(model, i, t) = force(model, i, t) / drag_coefficient(model[i])
+velocity(model, i, t; η=0.5) = force(model, i, t) / η
 
-# First `update_velocities!()` and then `update_positions!()` for each cell
+# First `update_velocities!()` and then `update_positions!()` for each cell to avoid positional errors
 function update_velocities!(model, t)
     for i in each_solid_vertex(model.triangulation)
         model[i].vel = velocity(model, i, t)
@@ -138,10 +114,10 @@ end
 
 function new_position(model, i, t)
     xᵢ = model[i]
-    vel = xᵢ.vel
-    r = xᵢ.pos + model.dt * vel
+    r = xᵢ.pos + model.dt * xᵢ.vel
     x, y = r
     xmax, ymax = spacesize(model)
+    ## Freeze if the new position is out of bounds
     if x < 0 || x > xmax || y < 0 || y > ymax
         r = xᵢ.pos
     end
@@ -156,35 +132,23 @@ function update_positions!(model, t)
     return model
 end
 
-# Search and select which Voronoi cell to proliferate
+# Cumulative sum of proliferation probabilities
 function proliferation_probability(model, t)
     Δt = model.dt
     ## Technically nagents is not the number of alive agents, but with the way we are handling agents this is correct
     probs = zeros(nagents(model))
     for i in allids(model)
-        if !DT.has_vertex(model.triangulation, i) || i in model.dead_cells
-            i > 1 && (probs[i] = probs[i-1])
-            continue
-        end
-
-        Gᵢ = proliferation_rate(model, i, t)
-
-        ## Cumulative sum of the probabilities
-        if i > 1
-            probs[i] = probs[i-1] + Gᵢ * Δt
+        ## Skip empty and dead cells
+        if !DT.has_vertex(model.triangulation, i) || (i ∈ model.dead_cells)
+            probs[i] = 0.0
         else
-            probs[i] = Gᵢ * Δt
+            probs[i] = proliferation_rate(model, i, t) * Δt
         end
     end
     return probs
 end
 
-function select_proliferative_cell(model, probs)
-    E = probs[end]
-    u = rand() * E
-    i = searchsortedlast(probs, u) + 1 ## searchsortedlast instead of searchsortedfirst since we skip over some agents in probs
-    return i
-end
+select_proliferative_cell(model, probs) = StatsBase.sample(weights(probs))
 
 # sampling from a Voronoi cell
 function sample_triangle(tri::Triangulation, T)
@@ -225,10 +189,12 @@ function sample_voronoi_cell(vorn::VoronoiTessellation, i)
     return sample_triangle(tri, T)
 end
 
+mutation_probability(p) = p.color == Red ? 0.3 : p.color == Blue ? 0.5 : 0.05 # pₘᵤₜ
 # computing the daughter cell and performing the proliferation event.
-function place_daughter_cell!(model, i, t)
+function place_daughter_cell!(model, i::Int, t)
     parent = model[i]
-    daughter = sample_voronoi_cell(model.tessellation, i) # this is an SVector, not a Cell
+    ## this is an SVector, not a Cell
+    daughterpos = sample_voronoi_cell(model.tessellation, i)
     u = rand()
     clr = parent.color
     if u < mutation_probability(parent)
@@ -236,24 +202,26 @@ function place_daughter_cell!(model, i, t)
     else
         newclr = clr
     end
-    add_agent!(daughter, model; color=newclr, birth=t, vel=SVector(0.0, 0.0))
-    return daughter
+    add_agent!(daughterpos, model; color=newclr, birth=t, vel=SVector(0.0, 0.0))
+    return daughterpos
 end
 
 function proliferate_cells!(model, t)
     probs = proliferation_probability(model, t)
     u = rand()
-    event = u < probs[end]
+    event = u < sum(probs)
     !event && return false
     i = select_proliferative_cell(model, probs)
-    daughter = place_daughter_cell!(model, i, t)
+    daughterpos = place_daughter_cell!(model, i, t)
     return true
 end
 
-# Mark cells as dead
-function cull_cell!(model, i, t)
+max_age(p) = p.color == Red ? 10.0 : p.color == Blue ? 10.0 : 3.0 # dₘₐₓ
+death_rate(p) = p.color == Red ? 0.001 : p.color == Blue ? 0.00005 : 0.0001 # psick
+# Mark cell i as dead
+function cull_cell!(model, i::Int, t)
     p = model[i]
-    elder = t - p.birth > max_age(p)
+    elder = t - p.birth> max_age(p)
     sick = rand() < model.dt * death_rate(p)
     xmax, ymax = spacesize(model)
     x, y = p.pos
@@ -271,14 +239,15 @@ function cull_cells!(model, t)
     return model
 end
 
-# Define the stepping function of the ABModel
+# (Finally,) define the stepping function of the ABModel
 function model_step!(model)
     stepn = abmtime(model)
     t = stepn * model.dt
     cull_cells!(model, t)
     proliferate_cells!(model, t)
     update_positions!(model, t)
-    model.triangulation = retriangulate(model.triangulation, allagents(model); skip_points=model.dead_cells)
+    points = [a.pos for a in allagents(model)]
+    model.triangulation = retriangulate(model.triangulation, points; skip_points=model.dead_cells)
     model.tessellation = voronoi(model.triangulation, clip=true)
     return model
 end
@@ -320,7 +289,7 @@ function initialize_cell_model(;
     ## Define the model
     model = StandardABM(Cell, space; model_step!, properties, container=Vector)
 
-    ## Add the agents
+    ## Add cells
     for (id, pos) in pairs(positions)
         add_agent!(pos, model; color=Red, birth=0.0, vel=SVector(0.0, 0.0))
     end
@@ -379,4 +348,81 @@ model = initialize_cell_model()
 nsteps = Int(finalT / model.dt)
 mdata = [count_red, count_blue, count_orange, count_total,
     average_cell_area, average_cell_diameter, average_spring_length]
-agent_df, model_df = run!(model, nsteps; mdata);
+@time agent_df, model_df = run!(model, nsteps; mdata);
+
+# Visualize using CairoMakie
+time = 0:model.dt:finalT
+fig = Figure(fontsize=24)
+ax = Axis(fig[1, 1], xlabel="Time", ylabel="Count", width=600, height=400)
+lines!(ax, time, model_df[!, :count_red], color=:red, label="Red", linewidth=3)
+lines!(ax, time, model_df[!, :count_blue], color=:blue, label="Blue", linewidth=3)
+lines!(ax, time, model_df[!, :count_orange], color=:orange, label="Orange", linewidth=3)
+lines!(ax, time, model_df[!, :count_total], color=:black, label="Total", linewidth=3)
+axislegend(ax, position=:lt)
+ax = Axis(fig[1, 2], xlabel="Time", ylabel="Average", width=600, height=400)
+lines!(ax, time, model_df[!, :average_cell_area], color=:black, label="Cell area", linewidth=3)
+lines!(ax, time, model_df[!, :average_cell_diameter], color=:magenta, label="Cell diameter", linewidth=3)
+lines!(ax, time, model_df[!, :average_spring_length], color=:red, label="Spring length", linewidth=3)
+axislegend(ax, position=:rb)
+resize_to_layout!(fig)
+fig
+
+# Animate the results
+voronoi_marker = (model, cell) -> begin
+    id = cell.id
+    verts = get_polygon_coordinates(model.tessellation, id)
+    return Makie.Polygon([Point2f(getxy(q) .- cell.pos) for q in verts])
+end
+voronoi_color(cell) = cell.color == Red ? :red : cell.color == Blue ? :blue : :orange
+model = initialize_cell_model() ## reinitialise the model for the animation
+fig, ax, amobs = abmplot(model, agent_marker=cell -> voronoi_marker(model, cell), agent_color=voronoi_color,
+    agentsplotkwargs=(strokewidth=1,), figure=(; size=(1600, 800), fontsize=34), mdata=mdata,
+    axis=(; width=800, height=800), when=10)
+current_time = Observable(0.0)
+t = Observable([0.0])
+nred = Observable(amobs.mdf[][!, :count_red])
+nblue = Observable(amobs.mdf[][!, :count_blue])
+norange = Observable(amobs.mdf[][!, :count_orange])
+ntotal = Observable(amobs.mdf[][!, :count_total])
+avg_area = Observable(amobs.mdf[][!, :average_cell_area])
+avg_diam = Observable(amobs.mdf[][!, :average_cell_diameter])
+avg_spring = Observable(amobs.mdf[][!, :average_spring_length])
+plot_layout = fig[:, end+1] = GridLayout()
+count_layout = plot_layout[1, 1] = GridLayout()
+ax_count = Axis(count_layout[1, 1], xlabel="Time", ylabel="Count", width=600, height=400)
+lines!(ax_count, t, nred, color=:red, label="Red", linewidth=3)
+lines!(ax_count, t, nblue, color=:blue, label="Blue", linewidth=3)
+lines!(ax_count, t, norange, color=:orange, label="Orange", linewidth=3)
+lines!(ax_count, t, ntotal, color=:black, label="Total", linewidth=3)
+vlines!(ax_count, current_time, color=:grey, linestyle=:dash, linewidth=3)
+xlims!(ax_count, 0, finalT)
+ylims!(ax_count, 0, 800)
+avg_layout = plot_layout[2, 1] = GridLayout()
+ax_avg = Axis(avg_layout[1, 1], xlabel="Time", ylabel="Average", width=600, height=400)
+lines!(ax_avg, t, avg_area, color=:black, label="Cell area", linewidth=3)
+lines!(ax_avg, t, avg_diam, color=:magenta, label="Cell diameter", linewidth=3)
+lines!(ax_avg, t, avg_spring, color=:red, label="Spring length", linewidth=3)
+vlines!(ax_avg, current_time, color=:grey, linestyle=:dash, linewidth=3)
+axislegend(ax_avg, position=:rt)
+xlims!(ax_avg, 0, finalT)
+ylims!(ax_avg, 0, 2)
+resize_to_layout!(fig)
+on(amobs.mdf) do mdf
+    current_time[] = abmtime(amobs.model[]) * model.dt
+    t.val = mdf[!, :time] .* model.dt
+    nred[] = mdf[!, :count_red]
+    nblue[] = mdf[!, :count_blue]
+    norange[] = mdf[!, :count_orange]
+    ntotal[] = mdf[!, :count_total]
+    avg_area[] = mdf[!, :average_cell_area]
+    avg_diam[] = mdf[!, :average_cell_diameter]
+    avg_spring[] = mdf[!, :average_spring_length]
+end
+
+# Record the results for every 10 steps
+vio = Makie.Record(fig, 1:(nsteps ÷ 10), framerate=24) do i
+    step!(amobs, 10)
+end
+
+#----
+save("celldiv.mp4", vio)
