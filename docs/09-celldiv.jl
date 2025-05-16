@@ -15,7 +15,7 @@ using StreamSampling
 using Random
 using StatsBase
 using CairoMakie
-CairoMakie.activate!(px_per_unit = 1.0)
+CairoMakie.activate!(px_per_unit = 0.5)
 
 # Define agents (3 colors of cells)
 @enum CellType begin
@@ -425,4 +425,4 @@ vio = Makie.Record(fig, 1:(nsteps ÷ 10), framerate=24) do i
 end
 
 #----
-save("celldiv.mp4", vio)
+# save("celldiv.mp4", vio)
