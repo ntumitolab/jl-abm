@@ -62,7 +62,7 @@ dmypy.json
 .pyre/
 
 # Local VSCode settings
-.vscode/
+# .vscode/
 
 # Julia DEPOT
 .julia/
@@ -97,7 +97,6 @@ docs/site/
 .CondaPkg
 
 # generated files
-
 *.mp4
 *.jld2
 *.gif
