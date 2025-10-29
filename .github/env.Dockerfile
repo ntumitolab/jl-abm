@@ -1,4 +1,4 @@
-FROM julia:1.10
+FROM julia:1.12
 
 # System config
 ENV JULIA_CI='true'
