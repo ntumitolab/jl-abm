@@ -17,13 +17,13 @@ env:
   JULIA_CONDAPKG_BACKEND: 'Null'
   JULIA_CONDAPKG_OFFLINE: 'true'
   JULIA_NUM_THREADS: '2'
-  LITERATE_PROC: '2'
+  LITERATE_PROC: '16'
   NBCACHE: '.cache'
   UV_SYSTEM_PYTHON: 1
 
 jobs:
   CI:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: write
     steps:
