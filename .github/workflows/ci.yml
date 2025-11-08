@@ -109,7 +109,7 @@ jobs:
         single-commit: true
         commit-message: ${{ github.event.head_commit.message }}
     - name: Setup NodeJS (required by Jupyter Book 2)
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: 18.x
     - name: Install Jupyter Book (via myst)
