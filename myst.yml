@@ -1,0 +1,31 @@
+# See docs at: https://mystmd.org/guide/frontmatter
+version: 1
+project:
+  title: Agent-based Modeling
+  description: Agent-based Modeling examples
+  # keywords: []
+  authors: ["Wen-Wei Tseng"]
+  github: https://github.com/ntumitolab/jl-abm
+  jupyter:
+    binder:
+      ref: ipynb
+
+  # bibliography: []
+  # To autogenerate a Table of Contents, run "jupyter book init --write-toc"
+  # https://mystmd.org/guide/table-of-contents
+  toc:
+    - file: docs/index.ipynb
+    - file: docs/01-schelling.ipynb
+    - file: docs/02-graph-sars2.ipynb
+    - file: docs/03-social-distancing.ipynb
+    - file: docs/04-flocking.ipynb
+    - file: docs/05-event-multiagent.ipynb
+    - file: docs/06-osmabm.ipynb
+    - file: docs/07-abm-diffeq.ipynb
+    - file: docs/08-cellistmap.ipynb
+    - file: docs/09-celldiv.ipynb
+site:
+  template: book-theme
+  # options:
+  #   favicon: favicon.ico
+  #   logo: site_logo.png
