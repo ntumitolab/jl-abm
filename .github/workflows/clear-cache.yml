@@ -1,4 +1,4 @@
-name: Clear cache
+name: Manually clear cache
 on:
   workflow_dispatch:
 
@@ -8,8 +8,6 @@ jobs:
       actions: write
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
       - name: Cleanup
         run: |
           echo "Fetching list of cache keys from $BRANCH"
@@ -24,6 +22,6 @@ jobs:
           done
           echo "Done"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           BRANCH: ${{ github.ref }}
