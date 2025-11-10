@@ -15,7 +15,7 @@ StreamSampling = "ff63dad9-3335-55d8-95ec-f8139d39e468"
 
 [compat]
 Agents = "6.2.10"
-CairoMakie = "0.12.18"
+CairoMakie = "0.12.18, 0.15"
 CellListMap = "0.9.14"
 DataFrames = "1.8.1"
 DelaunayTriangulation = "1.6.5"
