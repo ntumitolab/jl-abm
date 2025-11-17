@@ -29,7 +29,7 @@ jobs:
       - name: Setup Julia
         uses: julia-actions/setup-julia@v2
         with:
-          version: '1'
+          version: '1.10'
       - name: Update Julia dependencies
         env:
           JULIA_PKG_PRECOMPILE_AUTO: '0'
@@ -48,9 +48,4 @@ jobs:
         with:
           title: Julia Dependency Update
           token: ${{ steps.generate-token.outputs.token }}
-      - name: Add to merge quque / automerge
-        if: ${{ steps.cpr.outputs.pull-request-number }}
-        run: gh pr merge --auto --squash "$PR_NUM"
-        env:
-          PR_NUM: ${{ steps.cpr.outputs.pull-request-number }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          labels: automerge
