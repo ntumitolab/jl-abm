@@ -1,4 +1,4 @@
-name: CI
+name: Build notebooks and publish
 
 on:
   workflow_dispatch:
@@ -12,16 +12,15 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  BASE_URL: /${{ github.event.repository.name }}
-  JULIA_CI: 'true'
   JULIA_CONDAPKG_BACKEND: 'Null'
   JULIA_CONDAPKG_OFFLINE: 'true'
-  # JULIA_NUM_THREADS: '2'
-  LITERATE_PROC: '2'
+  JULIA_CI: 'true'
   NBCACHE: '.cache'
+  JULIA_NUM_THREADS: '2'
+  LITERATE_PROC: '2'
 
 jobs:
-  execute:
+  CI:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
@@ -31,20 +30,15 @@ jobs:
       id: setup-python
       with:
         python-version: '3.13'
-        cache: 'pip'
     - name: Install Python dependencies
       run: pip install -r requirements.txt
     - name: Read Julia version
-      uses: SebRollen/toml-action@v1.2.0
       id: julia-version
-      with:
-        file: 'Manifest.toml'
-        field: 'julia_version'
+      run: python -c 'import tomllib; from pathlib import Path; print("value=", tomllib.loads(Path("Manifest.toml").read_text())["julia_version"], sep="")' >> "$GITHUB_OUTPUT"
     - name: Get environment hash
       id: hash
       run: |
-        echo "value=${{ hashFiles('Project.toml', 'Manifest.toml') }}" >> "$GITHUB_OUTPUT"
-        echo "ver=${{ runner.os }}-julia-${{ steps.julia-version.outputs.value }}" >> "$GITHUB_OUTPUT"
+        echo "value=${{ hashFiles('Project.toml', 'Manifest.toml', 'src/**') }}" >> "$GITHUB_OUTPUT"
     - name: Cache executed notebooks
       uses: actions/cache@v4
       id: cache-nb
@@ -52,31 +46,35 @@ jobs:
         path: |
           ${{ env.NBCACHE }}/**/*.ipynb
           ${{ env.NBCACHE }}/**/*.sha
-        key: notebook-${{ steps.hash.outputs.value }}-${{ hashFiles('docs/**/*.ipynb', 'docs/**/*.jl') }}
+        key: notebook-${{ steps.hash.outputs.value }}-${{ hashFiles('docs/**') }}
         restore-keys: |
           notebook-${{ steps.hash.outputs.value }}-
     - name: Setup Julia
       uses: julia-actions/setup-julia@v2
       with:
         version: ${{ steps.julia-version.outputs.value }}
+        arch: ${{ runner.arch }}
     - name: Restore Julia packages
       uses: actions/cache/restore@v4
       if: ${{ runner.environment == 'github-hosted' }}
       id: cache-julia
       with:
         path: ~/.julia
-        key: ${{ steps.hash.outputs.ver }}-${{ steps.hash.outputs.value }}
+        key: ${{ runner.os }}-julia-${{ steps.julia-version.outputs.value }}-${{ steps.hash.outputs.value }}
         restore-keys: |
-          ${{ steps.hash.outputs.ver }}-
+          ${{ runner.os }}-julia-${{ steps.julia-version.outputs.value }}
     - name: Install Julia packages
       if: ${{ runner.environment == 'self-hosted' || steps.cache-julia.outputs.cache-hit != 'true' }}
       shell: julia --color=yes {0}
       run: |
-        using Pkg
+        using Pkg, Dates
         Pkg.add(["Literate", "JSON", "Tables", "MarkdownTables", "SHA"])
         Pkg.activate(".")
         Pkg.instantiate()
         Pkg.precompile()
+        if ENV["RUNNER_ENVIRONMENT"] == "github-hosted"
+            Pkg.gc(;collect_delay=Day(0))
+        end
     - name: Save Julia packages
       uses: actions/cache/save@v4
       if: ${{ runner.environment == 'github-hosted' && steps.cache-julia.outputs.cache-hit != 'true' }}
@@ -86,99 +84,33 @@ jobs:
     - name: Run notebooks
       if: ${{ steps.cache-nb.outputs.cache-hit != 'true' }}
       run: julia --project=@. --color=yes -p ${{ env.LITERATE_PROC }} .github/ci.jl
-    - name: Upload Notebooks
-      uses: actions/upload-artifact@v5
-      with:
-        path: ${{ env.NBCACHE }}/**/*.ipynb
-        include-hidden-files: true
-        name: notebooks
-        retention-days: 1
-  render:
-    needs: execute
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v5
-    - name: Download notebooks
-      uses: actions/download-artifact@v6
-      with:
-        name: notebooks
-        path: ${{ env.NBCACHE }}
     - name: Copy back built notebooks
       run: cp --verbose -rf ${{ env.NBCACHE }}/docs/* docs/
-    - name: Setup NodeJS (required by Jupyter Book 2)
-      uses: actions/setup-node@v6
-      with:
-        node-version: 18.x
-    - name: Install Jupyter Book (via myst)
-      run: npm install -g jupyter-book
-    - name: Build website
-      run: jupyter-book build --html
+    - name: Setup Quarto
+      uses: quarto-dev/quarto-actions/setup@v2
+    - name: Remove all jl files preventing Quarto from rendering them
+      run: find docs/ -type f -name '*.jl' -delete
+    - name: Render Quarto Project
+      run: quarto render docs/ --to html
     - name: Upload pages artifact
-      if: ${{ github.ref == 'refs/heads/main' }}
       uses: actions/upload-pages-artifact@v4
+      if: ${{ github.ref == 'refs/heads/main' }}
       with:
-        path: './_build/html'
+        path: _site/
 
-  # CI conclusion for GitHub status check
-  # Adaped from https://brunoscheufler.com/blog/2022-04-09-the-required-github-status-check-that-wasnt
-  CI:
-    needs: render
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          if [[ ${{ needs.render.result }} == "success" ]]; then
-            echo "Tests passed"
-            exit 0
-          else
-            echo "Tests failed"
-            exit 1
-          fi
-
-  # Deployment job
   deploy:
-    name: Deploy to GitHub pages and Notebook branch
-    needs: render
-    if: ${{ github.ref == 'refs/heads/main' }}
+    name: Deploy to GitHub pages
+    needs: CI
+    if: ${{ github.ref == 'refs/heads/main'}}
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
-      pages: write    # to deploy to Pages
+      pages: write # to deploy to Pages
       id-token: write # to verify the deployment originates from an appropriate source
-      actions: read   # to download an artifact uploaded by `actions/upload-pages-artifact`
-      contents: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-      - name: Download notebooks
-        uses: actions/download-artifact@v6
-        with:
-          name: notebooks
-          path: ${{ env.NBCACHE }}
-      - name: Copy back built notebooks
-        run: |
-          cp --verbose -rf ${{ env.NBCACHE }}/docs/* docs/
-          rm -rf ${{ env.NBCACHE }}
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        id: setup-python
-        with:
-          python-version: '3.13'
-      - name: Install nbconvert
-        run: pip install nbconvert
-      - name: Find notebooks
-        run: find docs/ -type f -name '*.ipynb' | parallel jupyter nbconvert --clear-output --inplace {}
-      - name: Deploy notebooks
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          publish_dir: .
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: ipynb
-          commit_message: ${{ github.event.head_commit.message }}
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
