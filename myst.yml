@@ -5,10 +5,13 @@ project:
   description: Agent based modeling
   # keywords: []
   authors: ["Wen-Wei Tseng"]
-  github: ntumitolab/jl-abm/pulls
+  github: ntumitolab/jl-abm
   jupyter:
     binder:
+      url: https://mybinder.org/
       ref: ipynb
+      provider: github
+      repo: ntumitolab/jl-abm
   license: CC-BY-4.0
   open_access: true
   # bibliography:
