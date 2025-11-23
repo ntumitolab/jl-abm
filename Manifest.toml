@@ -446,9 +446,9 @@ version = "1.6.5"
 
 [[deps.DiffEqBase]]
 deps = ["ArrayInterface", "ConcreteStructs", "DocStringExtensions", "EnzymeCore", "FastBroadcast", "FastClosures", "FastPower", "FunctionWrappers", "FunctionWrappersWrappers", "LinearAlgebra", "Logging", "Markdown", "MuladdMacro", "PrecompileTools", "Printf", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLOperators", "SciMLStructures", "Setfield", "Static", "StaticArraysCore", "Statistics", "SymbolicIndexingInterface", "TruncatedStacktraces"]
-git-tree-sha1 = "410de4b89beab68dce2adfb342fb4e73d20871ac"
+git-tree-sha1 = "d7259aa30ff9c4a512513d119882e3df3e656238"
 uuid = "2b5f629d-d688-5b77-993f-72d75c75574e"
-version = "6.191.0"
+version = "6.192.0"
 
     [deps.DiffEqBase.extensions]
     DiffEqBaseCUDAExt = "CUDA"
@@ -2539,9 +2539,9 @@ version = "0.5.8"
 
 [[deps.StringManipulation]]
 deps = ["PrecompileTools"]
-git-tree-sha1 = "725421ae8e530ec29bcbdddbe91ff8053421d023"
+git-tree-sha1 = "a3c1536470bf8c5e02096ad4853606d7c8f62721"
 uuid = "892a3eda-7b42-436c-8928-eab12a02cf0e"
-version = "0.4.1"
+version = "0.4.2"
 
 [[deps.StructArrays]]
 deps = ["ConstructionBase", "DataAPI", "Tables"]
