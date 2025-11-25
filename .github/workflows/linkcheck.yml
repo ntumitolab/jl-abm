@@ -18,21 +18,22 @@ concurrency:
 
 jobs:
   linkcheck:
-    env:
-      DIR: 'docs'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
+    permissions:
+      issues: write # required for peter-evans/create-issue-from-file
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v6
+        id: setup-python
         with:
-          python-version: '3.x'
-      - name: Install requirements
+          python-version: '3.13'
+      - name: Install nbconvert
         run: pip install nbconvert
       - name: Convert ipynb files to markdown
         run: >
-          find ${{ env.DIR }} -type f -name '*.ipynb' |
+          find docs/ -type f -name '*.ipynb' |
           parallel jupyter nbconvert --to markdown {}
       - name: Restore lychee cache
         id: restore-cache
@@ -41,13 +42,13 @@ jobs:
           path: .lycheecache
           key: cache-lychee-${{ github.sha }}
           restore-keys: cache-lychee-
-      - name: Lychee link check
-        uses: lycheeverse/lychee-action@v2.7.0
+      - name: Lychee Checker
+        uses: lycheeverse/lychee-action@v2
         id: lychee
         with:
           fail: false
           failIfEmpty: false
-          args: --accept 200,204,429 --verbose --no-progress --cache --max-cache-age 1d "${{ env.DIR }}/**/*.md" "${{ env.DIR }}/**/*.qmd" "${{ env.DIR }}/**/*.jl"
+          args: '--accept 200,204,429 --verbose --no-progress --cache --max-cache-age 1d "docs/**/*.md" "docs/**/*.qmd"'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create Issue From File

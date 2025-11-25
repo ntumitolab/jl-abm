@@ -1,4 +1,4 @@
-name: CI with dynamic parallel matrix
+name: Build notebooks and publish
 
 on:
   workflow_dispatch:
@@ -12,21 +12,18 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NBCACHE: ".cache"
+  JULIA_CI: 'true'
   JULIA_CONDAPKG_BACKEND: 'Null'
   JULIA_CONDAPKG_OFFLINE: 'true'
+  JULIA_NUM_THREADS: '2'
   JULIA_CPU_TARGET: 'generic;icelake-server,clone_all;znver3,clone_all'
-  JULIA_CI: 'true'
-  JULIA_NUM_THREADS: 'auto'
+  NBCACHE: '.cache'
+  LITERATE_PROC: '2'
   PY_VER: '3.13'
 
 jobs:
-  setup:
+  execute:
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-      hash: ${{ steps.hash.outputs.value }}
-      ver: ${{ steps.julia-version.outputs.resolved }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v6
@@ -41,123 +38,87 @@ jobs:
       run: uv pip install --system -r requirements.txt
     - name: Read Julia version
       id: julia-version
-      run: python -c 'import tomllib; from pathlib import Path; print("resolved=", tomllib.loads(Path("Manifest.toml").read_text())["julia_version"], sep="")' >> "$GITHUB_OUTPUT"
+      run: python -c 'import tomllib; from pathlib import Path; print("value=", tomllib.loads(Path("Manifest.toml").read_text())["julia_version"], sep="")' >> "$GITHUB_OUTPUT"
     - name: Get environment hash
       id: hash
       run: |
         echo "value=${{ hashFiles('Project.toml', 'Manifest.toml', 'src/**') }}" >> "$GITHUB_OUTPUT"
-        echo "ver=${{ runner.os }}-julia-${{ steps.julia-version.outputs.resolved }}" >> "$GITHUB_OUTPUT"
+    - name: Cache executed notebooks
+      uses: actions/cache@v4
+      id: cache-nb
+      with:
+        path: |
+          ${{ env.NBCACHE }}/**/*.ipynb
+          ${{ env.NBCACHE }}/**/*.sha
+        key: notebook-${{ steps.hash.outputs.value }}-${{ hashFiles('docs/**') }}
+        restore-keys: |
+          notebook-${{ steps.hash.outputs.value }}-
     - name: Setup Julia
       uses: julia-actions/setup-julia@v2
       with:
-        version: ${{ steps.julia-version.outputs.resolved }}
+        version: ${{ steps.julia-version.outputs.value }}
         arch: ${{ runner.arch }}
-    - name: Cache Julia packages
-      uses: actions/cache@v4
+    - name: Restore Julia packages
+      uses: actions/cache/restore@v4
+      if: ${{ runner.environment == 'github-hosted' }}
       id: cache-julia
       with:
         path: ~/.julia
-        key: ${{ runner.os }}-julia-${{ steps.julia-version.outputs.resolved }}-${{ steps.hash.outputs.value }}
+        key: ${{ runner.os }}-julia-${{ steps.julia-version.outputs.value }}-${{ steps.hash.outputs.value }}
         restore-keys: |
-          ${{ runner.os }}-julia-${{ steps.julia-version.outputs.resolved }}-
+          ${{ runner.os }}-julia-${{ steps.julia-version.outputs.value }}
     - name: Install Julia packages
-      if: ${{ steps.cache-julia.outputs.cache-hit != 'true' }}
+      if: ${{ runner.environment == 'self-hosted' || steps.cache-julia.outputs.cache-hit != 'true' }}
       shell: julia --color=yes {0}
       run: |
         using Pkg, Dates
-        Pkg.add(["Literate", "JSON"])
+        Pkg.add(["Literate", "JSON", "Tables", "MarkdownTables", "SHA"])
         Pkg.activate(".")
         Pkg.instantiate()
         Pkg.precompile()
         if ENV["RUNNER_ENVIRONMENT"] == "github-hosted"
             Pkg.gc(;collect_delay=Day(0))
         end
-    - name: List notebooks as a JSON array
-      id: set-matrix
-      run: echo "matrix=$(python -c 'import glob, json; print(json.dumps(glob.glob("**/*.ipynb", root_dir="docs", recursive=True) + glob.glob("**/*.jl", root_dir="docs", recursive=True)))')" >> "$GITHUB_OUTPUT"
-
-  execute:
-    needs: setup
-    strategy:
-      max-parallel: 10
-      fail-fast: false
-      matrix:
-        notebook: ${{ fromJSON(needs.setup.outputs.matrix) }}
-    runs-on: ubuntu-latest
-    env:
-      NB: docs/${{ matrix.notebook }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Cache notebook
-        uses: actions/cache@v4
-        id: nb-cache
-        with:
-          path: ${{ env.NBCACHE }}
-          key: notebook-${{ needs.setup.outputs.hash }}-${{ hashFiles(env.NB) }}
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        if: ${{ steps.nb-cache.outputs.cache-hit != 'true' }}
-        id: setup-python
-        with:
-          python-version: ${{ env.PY_VER }}
-      - name: Install the latest version of uv
-        if: ${{ steps.nb-cache.outputs.cache-hit != 'true' }}
-        uses: astral-sh/setup-uv@v7
-      - name: Install Python dependencies
-        if: ${{ steps.nb-cache.outputs.cache-hit != 'true' }}
-        run: uv pip install --system -r requirements.txt
-      - name: Setup Julia
-        uses: julia-actions/setup-julia@v2
-        if: ${{ steps.nb-cache.outputs.cache-hit != 'true' }}
-        with:
-          version: ${{ needs.setup.outputs.ver }}
-          arch: ${{ runner.arch }}
-      - name: Restore Julia packages
-        uses: actions/cache/restore@v4
-        if: ${{ steps.nb-cache.outputs.cache-hit != 'true' }}
-        with:
-          path: ~/.julia
-          key: ${{ runner.os }}-julia-${{ needs.setup.outputs.ver }}-${{ needs.setup.outputs.hash }}
-      - name: Execute notebook
-        if: ${{ steps.nb-cache.outputs.cache-hit != 'true' }}
-        run: julia --project=@. .github/ci.jl
-      - name: Convert artifact Name
-        id: art
-        run: echo "name=$(echo ${{ env.NB }} | sed 's/\//-/g')" >> "$GITHUB_OUTPUT"
-      - name: Upload Notebook
-        uses: actions/upload-artifact@v5
-        with:
-          name: notebook-${{ steps.art.outputs.name }}-${{ needs.setup.outputs.hash }}-${{ hashFiles(env.NB) }}
-          path: ${{ env.NBCACHE }}
-          include-hidden-files: true
-          retention-days: 1
-
+    - name: Save Julia packages
+      uses: actions/cache/save@v4
+      if: ${{ runner.environment == 'github-hosted' && steps.cache-julia.outputs.cache-hit != 'true' }}
+      with:
+        path: ~/.julia
+        key: ${{ steps.cache-julia.outputs.cache-primary-key }}
+    - name: Run notebooks
+      if: ${{ steps.cache-nb.outputs.cache-hit != 'true' }}
+      run: julia --project=@. --color=yes -p ${{ env.LITERATE_PROC }} .github/ci.jl
+    - name: Upload Notebooks
+      uses: actions/upload-artifact@v5
+      with:
+        path: ${{ env.NBCACHE }}/**/*.ipynb
+        include-hidden-files: true
+        name: notebooks
+        retention-days: 1
   render:
     needs: execute
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Download notebooks
-        uses: actions/download-artifact@v6
-        with:
-          path: ${{ env.NBCACHE }}/
-          pattern: notebook-*
-          merge-multiple: true
-      - name: Copy back built notebooks
-        run: cp --verbose -rf ${{ env.NBCACHE }}/docs/* docs/
-      - name: Setup Quarto
-        uses: quarto-dev/quarto-actions/setup@v2
-      - name: Remove jl files to avoid confusion with jupytext
-        run: find docs/ -type f -name "*.jl" -delete
-      - name: Render Quarto Project
-        run: quarto render docs --to html
-      - name: Upload artifact for GH pages
-        uses: actions/upload-pages-artifact@v4
-        if: ${{ github.ref == 'refs/heads/main' }}
-        with:
-          path: _site/
+    - name: Checkout
+      uses: actions/checkout@v6
+    - name: Download notebooks
+      uses: actions/download-artifact@v6
+      with:
+        name: notebooks
+        path: ${{ env.NBCACHE }}
+    - name: Copy back built notebooks
+      run: cp --verbose -rf ${{ env.NBCACHE }}/docs/* docs/
+    - name: Setup Quarto
+      uses: quarto-dev/quarto-actions/setup@v2
+    - name: Remove all jl files preventing Quarto from rendering them
+      run: find docs/ -type f -name '*.jl' -delete
+    - name: Render Quarto Project
+      run: quarto render docs/ --to html
+    - name: Upload pages artifact
+      uses: actions/upload-pages-artifact@v4
+      if: ${{ github.ref == 'refs/heads/main' }}
+      with:
+        path: _site/
 
   # CI conclusion for GitHub status check
   # Adaped from https://brunoscheufler.com/blog/2022-04-09-the-required-github-status-check-that-wasnt
@@ -175,16 +136,14 @@ jobs:
             exit 1
           fi
 
-  # Deployment job
   deploy:
     name: Deploy to GitHub pages
     needs: render
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: ${{ github.ref == 'refs/heads/main'}}
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
-      pages: write    # to deploy to Pages
+      pages: write # to deploy to Pages
       id-token: write # to verify the deployment originates from an appropriate source
-      actions: read   # to download an artifact uploaded by `actions/upload-pages-artifact@v3`
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
