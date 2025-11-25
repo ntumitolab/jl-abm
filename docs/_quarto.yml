@@ -1,0 +1,42 @@
+# https://quarto.org/docs/projects/quarto-projects.html
+project:
+  type: book
+  output-dir: ../_site
+
+# https://quarto.org/docs/books/
+book:
+  title: ABM in Julia
+  author: "Wen-Wei Tseng"
+  repo-url: https://github.com/ntumitolab/jl-abm
+  site-url: https://ntumitolab.github.io/jl-abm/
+  page-navigation: true
+  bread-crumbs: true
+  chapters:
+    - index.ipynb
+    - 01-schelling.ipynb
+    - 02-graph-sars2.ipynb
+    - 03-social-distancing.ipynb
+    - 04-flocking.ipynb
+    - 05-event-multiagent.ipynb
+    - 06-osmabm.ipynb
+    - 07-abm-diffeq.ipynb
+    - 08-cellistmap.ipynb
+    - 09-celldiv.ipynb
+
+# bibliography: references.bib
+
+# https://quarto.org/docs/output-formats/html-basics.html
+format:
+  html:
+    code-link: true
+    theme:
+      light: cosmo
+      dark: cyborg
+
+# Default options
+# notebook-links: true
+
+# Execution
+# execute:
+#   cache: true
+# engines: ['julia']
