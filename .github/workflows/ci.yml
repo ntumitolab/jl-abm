@@ -17,6 +17,7 @@ env:
   JULIA_CONDAPKG_OFFLINE: 'true'
   JULIA_CPU_TARGET: 'generic;icelake-server,clone_all;znver3,clone_all'
   JULIA_NUM_THREADS: '2'
+  OPENBLAS_NUM_THREADS: '1'
   NBCACHE: '.cache'
   LITERATE_PROC: '2'
   PY_VER: '3.14'
@@ -70,10 +71,13 @@ jobs:
           ${{ runner.os }}-julia-${{ steps.julia-version.outputs.value }}
     - name: Install Julia packages
       if: ${{ steps.cache-nb.outputs.cache-hit != 'true' && (runner.environment == 'self-hosted' || steps.cache-julia.outputs.cache-hit != 'true') }}
-      shell: julia --color=yes --project=@. {0}
+      shell: julia --color=yes {0}
       run: |
         using Pkg, Dates
+        Pkg.add(["JSON", "Literate", "MarkdownTables", "SHA", "Tables"])
+        Pkg.activate(".")
         Pkg.instantiate()
+        Pkg.resolve()
         Pkg.precompile()
         if ENV["RUNNER_ENVIRONMENT"] == "github-hosted"
             Pkg.gc(;collect_delay=Day(0))
@@ -96,13 +100,6 @@ jobs:
       with:
         name: notebooks
         path: docs/**/*.ipynb
-    - name: Upload figures
-      uses:  actions/upload-artifact@v6
-      with:
-        name: figures
-        path: |
-          docs/**/*.png
-          docs/**/*.pdf
     - name: Setup Quarto
       if: ${{ runner.environment == 'github-hosted' }}
       uses: quarto-dev/quarto-actions/setup@v2
