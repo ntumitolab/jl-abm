@@ -1,4 +1,3 @@
-md"""
 # Agent-based Modeling
 
 Agent-based Modeling (ABM) is a simulation method where the autonomous agents interacting with the environment (space) and/or each other by a set of rules.
@@ -29,13 +28,3 @@ Yes, you can define the agents, rules and stepping functions from scratch, but i
 
 - [Documentation](https://juliadynamics.github.io/Agents.jl/stable/) of `Agents.jl`.
 - [sir-julia](https://github.com/epirecipes/sir-julia) : Various implementations of the classical SIR model in Julia.
-
-## Runtime environment
-"""
-
-import InteractiveUtils
-InteractiveUtils.versioninfo()
-
-#---
-import Pkg
-Pkg.status()
