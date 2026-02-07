@@ -1,0 +1,4 @@
+{
+    "julia.executablePath": "julia +lts",
+    "julia.execution.resultType": "inline, errors in REPL"
+}
