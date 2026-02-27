@@ -1,4 +1,4 @@
-name: Build notebooks and publish
+name: CI
 
 on:
   workflow_dispatch:
@@ -12,18 +12,18 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  LITERATE_PROC: '2'
   JULIA_CI: 'true'
   JULIA_CONDAPKG_BACKEND: 'Null'
   JULIA_CONDAPKG_OFFLINE: 'true'
   JULIA_CPU_TARGET: 'generic;znver3,clone_all'
-  JULIA_NUM_THREADS: '2,0'
+  JULIA_NUM_THREADS: '2'
   OPENBLAS_NUM_THREADS: '1'
   NBCACHE: '.cache'
+  LITERATE_PROC: '2'
   PY_VER: '3.14'
 
 jobs:
-  CI:
+  execute:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
@@ -40,10 +40,11 @@ jobs:
     - name: Read Julia version
       id: julia-version
       run: python -c 'import tomllib; from pathlib import Path; print("value=", tomllib.loads(Path("Manifest.toml").read_text())["julia_version"], sep="")' >> "$GITHUB_OUTPUT"
-    - name: Get environment hash
+    - name: Get hashes
       id: hash
       run: |
         echo "value=${{ hashFiles('Project.toml', 'Manifest.toml', 'src/**') }}" >> "$GITHUB_OUTPUT"
+        echo "nb=${{ hashFiles('docs/**/*.jl', 'docs/**/*.ipynb') }}" >> "$GITHUB_OUTPUT"
     - name: Cache executed notebooks
       uses: actions/cache@v5
       id: cache-nb
@@ -51,7 +52,7 @@ jobs:
         path: |
           ${{ env.NBCACHE }}/**/*.ipynb
           ${{ env.NBCACHE }}/**/*.sha
-        key: notebook-${{ steps.hash.outputs.value }}-${{ hashFiles('docs/**') }}
+        key: notebook-${{ steps.hash.outputs.value }}-${{ steps.hash.outputs.nb }}
         restore-keys: |
           notebook-${{ steps.hash.outputs.value }}-
     - name: Setup Julia
@@ -78,9 +79,12 @@ jobs:
         Pkg.instantiate()
         Pkg.resolve()
         Pkg.precompile()
+        Pkg.activate()
+        Pkg.add(["JSON", "Literate", "MarkdownTables", "SHA", "Tables"])
         if ENV["RUNNER_ENVIRONMENT"] == "github-hosted"
             Pkg.gc(;collect_delay=Day(0))
         end
+        using Literate
     - name: Save Julia packages
       uses: actions/cache/save@v5
       if: ${{ steps.cache-nb.outputs.cache-hit != 'true' && runner.environment == 'github-hosted' && steps.cache-julia.outputs.cache-hit != 'true' }}
@@ -90,33 +94,62 @@ jobs:
     - name: Run notebooks
       if: ${{ steps.cache-nb.outputs.cache-hit != 'true' }}
       run: julia --project=@. --color=yes -p ${{ env.LITERATE_PROC }} .github/ci.jl
-    - name: Copy back built notebooks
-      run: |
-        cp --verbose -rf ${{ env.NBCACHE }}/docs/* docs/
-        find docs/ -type f -name "*.jl" -delete
-    - name: Upload notebook
-      uses:  actions/upload-artifact@v6
+    - name: Upload Notebook
+      uses: actions/upload-artifact@v6
       with:
         name: notebooks
-        path: docs/**/*.ipynb
-    - name: Setup Quarto
-      if: ${{ runner.environment == 'github-hosted' }}
-      uses: quarto-dev/quarto-actions/setup@v2
-    - name: Render Quarto Project
-      run: quarto render docs/
-    - name: Upload pages artifact
-      uses: actions/upload-pages-artifact@v4
-      if: ${{ github.ref == 'refs/heads/main' }}
+        path: ${{ env.NBCACHE }}
+        include-hidden-files: true
+  render:
+    needs: execute
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+    - name: Download notebooks
+      uses: actions/download-artifact@v7
       with:
-        path: docs/_site/
-
+        name: notebooks
+        path: ${{ env.NBCACHE }}/
+    - name: Copy back built notebooks
+      run: cp --verbose -rf ${{ env.NBCACHE }}/docs/* docs/
+    - name: Setup NodeJS
+      uses: actions/setup-node@v6
+      with:
+        node-version: 'lts/*'
+    - name: Build website
+      env:
+        BASE_URL: /${{ github.event.repository.name }}
+      run: |
+        npm install -g "jupyter-book"
+        jupyter-book build --html
+    - name: Upload pages artifact
+      if: ${{ github.ref == 'refs/heads/main' }}
+      uses: actions/upload-pages-artifact@v4
+      with:
+        path: './_build/html'
+  # CI conclusion for GitHub status check
+  CI:
+    needs: render
+    if: always()
+    runs-on: ubuntu-slim
+    steps:
+      - run: |
+          if [[ ${{ needs.render.result }} == "success" ]]; then
+            echo "Tests passed"
+            exit 0
+          else
+            echo "Tests failed"
+            exit 1
+          fi
+  # Deployment job
   deploy:
-    name: Deploy to GitHub pages
-    needs: CI
-    if: ${{ github.ref == 'refs/heads/main'}}
+    name: Deploy to GitHub pages and Notebook branch
+    needs: render
+    if: ${{ github.ref == 'refs/heads/main' }}
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
-      pages: write # to deploy to Pages
+      pages: write    # to deploy to Pages
       id-token: write # to verify the deployment originates from an appropriate source
     environment:
       name: github-pages
