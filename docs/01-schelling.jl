@@ -21,38 +21,15 @@ First, we create a 2D space with a Chebyshev metric. This leads to *8 neighborin
 ===#
 using Agents
 using Random
+using Base64
 using CairoMakie
 CairoMakie.activate!(px_per_unit = 1.0)
 
-# The helper function below is adapted from `Agents.abmvideo` and correctly displays animations in Jupyter notebooks
-function abmvio(model;
-    dt = 1, framerate = 30, frames = 300, title = "", showstep = true,
-    figure = (size = (600, 600),), axis = NamedTuple(),
-    recordkwargs = (compression = 23, format ="mp4"), kwargs...
-)
-    ## title and steps
-    abmtime_obs = Observable(abmtime(model))
-    if title ≠ "" && showstep
-        t = lift(x -> title*", time = "*string(x), abmtime_obs)
-    elseif showstep
-        t = lift(x -> "time = "*string(x), abmtime_obs)
-    else
-        t = title
-    end
-
-    axis = (title = t, titlealign = :left, axis...)
-    ## First frame
-    fig, ax, abmobs = abmplot(model; add_controls = false, warn_deprecation = false, figure, axis, kwargs...)
-    resize_to_layout!(fig)
-    ## Animation
-    Makie.Record(fig; framerate, recordkwargs...) do io
-        for j in 1:frames-1
-            recordframe!(io)
-            Agents.step!(abmobs, dt)
-            abmtime_obs[] = abmtime(model)
-        end
-        recordframe!(io)
-    end
+# The helper function displays video files in Jupyter notebooks
+function display_mp4(filename)
+    display("text/html", string("""<video autoplay controls><source src="data:video/x-m4v;base64,""",
+        base64encode(open(read, filename)),
+        """" type="video/mp4"></video>"""))
 end
 
 # Define the Agent type using the [`@agent`](https://juliadynamics.github.io/Agents.jl/stable/api/#Agents.@agent) macro.
@@ -138,15 +115,15 @@ figure
 
 # Let's make an animation for the model evolution.
 model = init_schelling()
-vio = abmvio(model;
-    agent_color = groupcolor,
-    agent_marker = groupmarker,
-    agent_size = 15,
-    framerate = 4, frames = 20,
+abmvideo(
+    "schelling.mp4", model;
+    agent_color = groupcolor, agent_marker = groupmarker, agent_size = 10,
+    framerate = 4, frames = 25,
     title = "Schelling's segregation model"
 )
 
-vio |> display
+#nb display_mp4("schelling.mp4")
+
 
 # ## Data analysis
 # The `run!()` function runs simulation and collects data in the `DataFrame` format. The `adata` (aggregated data) keyword selects fields we want to extract in the DataFrame.

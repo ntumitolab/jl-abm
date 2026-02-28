@@ -18,35 +18,11 @@ using Agents.DataFrames
 using CairoMakie
 CairoMakie.activate!(px_per_unit = 1.0)
 
-# The helper function is adapted from `Agents.abmvideo` and correctly displays animations in Jupyter notebooks
-function abmvio(model;
-    dt = 1, framerate = 30, frames = 300, title = "", showstep = true,
-    figure = (size = (600, 600),), axis = NamedTuple(),
-    recordkwargs = (compression = 23, format ="mp4"), kwargs...
-)
-    ## title and steps
-    abmtime_obs = Observable(abmtime(model))
-    if title ≠ "" && showstep
-        t = lift(x -> title*", time = "*string(x), abmtime_obs)
-    elseif showstep
-        t = lift(x -> "time = "*string(x), abmtime_obs)
-    else
-        t = title
-    end
-
-    axis = (title = t, titlealign = :left, axis...)
-    ## First frame
-    fig, ax, abmobs = abmplot(model; add_controls = false, warn_deprecation = false, figure, axis, kwargs...)
-    resize_to_layout!(fig)
-    ## Animation
-    Makie.Record(fig; framerate, recordkwargs...) do io
-        for j in 1:frames-1
-            recordframe!(io)
-            Agents.step!(abmobs, dt)
-            abmtime_obs[] = abmtime(model)
-        end
-        recordframe!(io)
-    end
+# The helper function displays video files in Jupyter notebooks
+function display_mp4(filename)
+    display("text/html", string("""<video autoplay controls><source src="data:video/x-m4v;base64,""",
+        base64encode(open(read, filename)),
+        """" type="video/mp4"></video>"""))
 end
 
 # Define rock, paper, and scissors (RPS) agents. One can use `variant(agent)` to see the agent type.
@@ -182,11 +158,10 @@ fig
 
 # # Animation
 model = initialize_rps()
-vio = abmvio( model;
+amvideo("rps.mp4", model;
     dt = 0.5, frames = 300,
     title = "Rock Paper Scissors (event based)",
     plotkw...,
 )
 
-save("rps.mp4", vio)
-vio |> display
+#nb display_mp4("rps.mp4")

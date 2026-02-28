@@ -14,8 +14,16 @@ $$
 ===#
 using Agents
 using CellListMap
+using Base64
 using CairoMakie
 CairoMakie.activate!(px_per_unit = 1.0)
+
+# The helper function displays video files in Jupyter notebooks
+function display_mp4(filename)
+    display("text/html", string("""<video autoplay controls><source src="data:video/x-m4v;base64,""",
+        base64encode(open(read, filename)),
+        """" type="video/mp4"></video>"""))
+end
 
 # Define particle agents
 @agent struct Particle(ContinuousAgent{2,Float64})
@@ -133,40 +141,10 @@ end
 model = initialize_bouncing(number_of_particles=10_000)
 @time simulate(model)
 
-# The helper function below is adapted from `Agents.abmvideo` and correctly displays animations in Jupyter notebooks
-function abmvio(model;
-    dt = 1, framerate = 30, frames = 300, title = "", showstep = true,
-    figure = (size = (600, 600),), axis = NamedTuple(),
-    recordkwargs = (compression = 23, format ="mp4"), kwargs...
-)
-    ## title and steps
-    abmtime_obs = Observable(abmtime(model))
-    if title ≠ "" && showstep
-        t = lift(x -> title*", time = "*string(x), abmtime_obs)
-    elseif showstep
-        t = lift(x -> "time = "*string(x), abmtime_obs)
-    else
-        t = title
-    end
-
-    axis = (title = t, titlealign = :left, axis...)
-    ## First frame
-    fig, ax, abmobs = abmplot(model; add_controls = false, warn_deprecation = false, figure, axis, kwargs...)
-    resize_to_layout!(fig)
-    ## Animation
-    Makie.Record(fig; framerate, recordkwargs...) do io
-        for j in 1:frames-1
-            recordframe!(io)
-            Agents.step!(abmobs, dt)
-            abmtime_obs[] = abmtime(model)
-        end
-        recordframe!(io)
-    end
-end
-
 # Visualize
 model = initialize_bouncing(number_of_particles=1000)
-vio = abmvio(
+abmvideo(
+    "cellistmap.mp4",
     model;
     framerate=20, frames=200, dt=5,
     title="Softly bouncing particles",
@@ -174,4 +152,4 @@ vio = abmvio(
     agent_color=p -> p.k
 )
 
-vio |> display
+#nb display_mp4("cellistmap.mp4")

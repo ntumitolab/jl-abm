@@ -16,35 +16,11 @@ using Base64
 using CairoMakie
 CairoMakie.activate!(px_per_unit = 1.0)
 
-# The helper function is adapted from `Agents.abmvideo` and correctly displays animations in Jupyter notebooks
-function abmvio(model;
-    dt = 1, framerate = 30, frames = 300, title = "", showstep = true,
-    figure = (size = (600, 600),), axis = NamedTuple(),
-    recordkwargs = (compression = 23, format ="mp4"), kwargs...
-)
-    ## title and steps
-    abmtime_obs = Observable(abmtime(model))
-    if title ≠ "" && showstep
-        t = lift(x -> title*", time = "*string(x), abmtime_obs)
-    elseif showstep
-        t = lift(x -> "time = "*string(x), abmtime_obs)
-    else
-        t = title
-    end
-
-    axis = (title = t, titlealign = :left, axis...)
-    ## First frame
-    fig, ax, abmobs = abmplot(model; add_controls = false, warn_deprecation = false, figure, axis, kwargs...)
-    resize_to_layout!(fig)
-    ## Animation
-    Makie.Record(fig; framerate, recordkwargs...) do io
-        for j in 1:frames-1
-            recordframe!(io)
-            Agents.step!(abmobs, dt)
-            abmtime_obs[] = abmtime(model)
-        end
-        recordframe!(io)
-    end
+# The helper function displays video files in Jupyter notebooks
+function display_mp4(filename)
+    display("text/html", string("""<video autoplay controls><source src="data:video/x-m4v;base64,""",
+        base64encode(open(read, filename)),
+        """" type="video/mp4"></video>"""))
 end
 
 #===
@@ -142,11 +118,12 @@ figure, _ = abmplot(model; agent_marker = bird_marker)
 figure
 
 # Animation
-vio = abmvio(
+abmvideo(
+    "flocking.mp4",
     model;
     agent_marker = bird_marker,
     framerate = 20, frames = 150,
     title = "Flocking",
 )
-save("flocking.mp4", vio)
-vio |> display
+
+#nb display_mp4("flocking.mp4")

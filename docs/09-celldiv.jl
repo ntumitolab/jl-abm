@@ -14,8 +14,16 @@ using LinearAlgebra
 using StreamSampling
 using Random
 using StatsBase
+using Base64
 using CairoMakie
 CairoMakie.activate!(px_per_unit = 0.5)
+
+# The helper function displays video files in Jupyter notebooks
+function display_mp4(filename)
+    display("text/html", string("""<video autoplay controls><source src="data:video/x-m4v;base64,""",
+        base64encode(open(read, filename)),
+        """" type="video/mp4"></video>"""))
+end
 
 # Define agents (3 colors of cells)
 @enum CellType begin
@@ -425,4 +433,4 @@ vio = Makie.Record(fig, 1:(nsteps ÷ 10), framerate=24) do i
 end
 
 #----
-# save("celldiv.mp4", vio)
+save("celldiv.mp4", vio)
