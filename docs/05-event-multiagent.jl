@@ -158,7 +158,7 @@ fig
 
 # # Animation
 model = initialize_rps()
-amvideo("rps.mp4", model;
+abmvideo("rps.mp4", model;
     dt = 0.5, frames = 300,
     title = "Rock Paper Scissors (event based)",
     plotkw...,
