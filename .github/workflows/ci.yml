@@ -15,8 +15,11 @@ env:
   LITERATE_PROC: '2'
   JULIA_CI: 'true'
   JULIA_NUM_THREADS: '2'
+  JULIA_CONDAPKG_BACKEND: 'Null'
+  JULIA_CONDAPKG_OFFLINE: 'true'
   OPENBLAS_NUM_THREADS: '1'
   NBCACHE: '.cache'
+  PY_VER: '3.14'
 
 jobs:
   CI:
@@ -24,12 +27,16 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v6
-    - name: Read Julia version
-      uses: SebRollen/toml-action@v1.2.0
-      id: julia-version
+    - name: Setup Python
+      uses: actions/setup-python@v6
+      id: setup-python
       with:
-        file: 'Manifest.toml'
-        field: 'julia_version'
+        python-version: ${{ env.PY_VER }}
+    - name: Install the latest version of uv
+      uses: astral-sh/setup-uv@v7
+    - name: Read Julia version
+      id: julia-version
+      run: python -c 'import tomllib; from pathlib import Path; print("value=", tomllib.loads(Path("Manifest.toml").read_text())["julia_version"], sep="")' >> "$GITHUB_OUTPUT"
     - name: Get hashes
       id: hash
       run: |
@@ -70,7 +77,9 @@ jobs:
         key: ${{ steps.cache-julia.outputs.cache-primary-key }}
     - name: Run notebooks
       if: ${{ steps.cache-nb.outputs.cache-hit != 'true' }}
-      run: julia --project=@. --color=yes -p ${{ env.LITERATE_PROC }} .github/ci.jl
+      run: |
+        uv pip install --system -r requirements.txt
+        julia --project=@. --color=yes -p ${{ env.LITERATE_PROC }} .github/ci.jl
     - name: Copy back built notebooks
       run: cp --verbose -rf ${{ env.NBCACHE }}/docs/* docs/
     - name: Setup NodeJS
