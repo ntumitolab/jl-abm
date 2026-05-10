@@ -105,7 +105,7 @@ end
 
 # Update the pairwise forces using CellListMap API
 function model_step!(model::ABM)
-    map_pairwise!(
+    pairwise!(
         (x, y, i, j, d2, forces) -> calc_forces!(x, y, i, j, d2, forces, model),
         model.system,
     )
