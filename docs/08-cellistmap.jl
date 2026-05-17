@@ -16,7 +16,7 @@ using Agents
 using CellListMap
 using Base64
 using CairoMakie
-CairoMakie.activate!(px_per_unit = 1.0)
+CairoMakie.activate!(px_per_unit=1.0)
 
 # The helper function displays video files in Jupyter notebooks
 function display_mp4(filename)
@@ -63,13 +63,14 @@ function initialize_bouncing(;
 
     ## define the ABModel properties
     ## The system field contains the data required for CellListMap.jl
-    properties = (;dt, number_of_particles, system)
+    properties = (; dt, number_of_particles, system)
 
-    model = StandardABM(Particle,
+    model = StandardABM(
+        Particle,
         space2d;
         agent_step!,
         model_step!,
-        agents_first = false,
+        agents_first=false,
         properties=properties
     )
 
@@ -77,11 +78,11 @@ function initialize_bouncing(;
     for id in 1:number_of_particles
         pos = positions[id]
         prop_particle = Particle(
-            r = (0.5 + 0.9 * rand()) * max_radius,
-            k = 10 + 20 * rand(), ## random force constants
-            mass = 10.0 + 100 * rand(), ## random masses
-            vel = 100 * randn(SVector{2}) ## initial velocities)
-            )
+            r=(0.5 + 0.9 * rand()) * max_radius,
+            k=10 + 20 * rand(), ## random force constants
+            mass=10.0 + 100 * rand(), ## random masses
+            vel=100 * randn(SVector{2}) ## initial velocities)
+        )
         add_agent!(pos, Particle, model, prop_particle...)
     end
 
@@ -90,10 +91,11 @@ end
 
 # Computing the repulsion force
 # It must follow CellListMap API and return a array for forces acting upon the particles
-function calc_forces!(x, y, i, j, d2, forces, model)
+function calc_forces!(pair, forces, model)
+    (; x, y, i, j, d2) = pair
+    d = sqrt(d2)
     p_i = model[i]
     p_j = model[j]
-    d = sqrt(d2)
     if d ≤ (p_i.r + p_j.r)
         dr = y - x ## x and y are minimum-image relative coordinates
         fij = 2 * (p_i.k * p_j.k) * (d2 - (p_i.r + p_j.r)^2) * (dr / d)
@@ -106,7 +108,7 @@ end
 # Update the pairwise forces using CellListMap API
 function model_step!(model::ABM)
     pairwise!(
-        (x, y, i, j, d2, forces) -> calc_forces!(x, y, i, j, d2, forces, model),
+        (pair, forces) -> calc_forces!(pair, forces, model),
         model.system,
     )
     return nothing
@@ -143,7 +145,7 @@ model = initialize_bouncing(number_of_particles=10_000)
 
 # Visualize
 model = initialize_bouncing(number_of_particles=1000)
-abmvideo(
+Agents.abmvideo(
     "cellistmap.mp4",
     model;
     framerate=20, frames=200, dt=5,
