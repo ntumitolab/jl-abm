@@ -29,14 +29,12 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v6
-    - name: Setup Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ env.PY_VER }}
     - name: Setup uv
       uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
     - name: Install Python deps
-      run: uv pip install -r requirements.txt
+      run: |
+        uv python install --default ${{ env.PY_VER }}
+        uv pip install -r requirements.txt
     - name: Read Julia version
       id: julia-version
       run: python -c 'import tomllib; from pathlib import Path; print("resolved=", tomllib.loads(Path("Manifest.toml").read_text())["julia_version"], sep="")' >> "$GITHUB_OUTPUT"
