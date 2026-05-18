@@ -32,6 +32,7 @@ jobs:
       uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       with:
         python-version: ${{ env.PY_VER }}
+        activate-environment: true
     - name: Install Python deps
       run: uv pip install -r requirements.txt
     - name: Add venv to path
