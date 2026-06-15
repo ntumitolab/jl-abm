@@ -1,4 +1,10 @@
 name = "Startup"
-uuid = "59d1823f-6c2b-42b5-8b8d-e60da02310f9"
-authors = ["Wen Wei Tseng <sosiristseng@gmail.com>"]
+uuid = "ec0733a6-3166-4be9-8ea3-7416dbe7715d"
 version = "0.1.0"
+authors = ["Wen Wei Tseng <sosiristseng@gmail.com>"]
+
+[deps]
+PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
+
+[compat]
+PrecompileTools = "1"
