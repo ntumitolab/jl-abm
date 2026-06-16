@@ -2,7 +2,7 @@
 
 julia_version = "1.12.6"
 manifest_format = "2.0"
-project_hash = "77bc5e6d8d82317f2de97f2663312e410f37b5a6"
+project_hash = "28c57394c85e3ac0e2be1c3a11e1aef63b0c87fe"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1499,6 +1499,11 @@ git-tree-sha1 = "be1cf4eb0ac528d96f5115b4ed80c26a8d8ae621"
 uuid = "cae243ae-269e-4f55-b966-ac2d0dc13c15"
 version = "0.1.2"
 
+[[deps.Startup]]
+deps = ["PrecompileTools"]
+path = "Startup"
+uuid = "ec0733a6-3166-4be9-8ea3-7416dbe7715d"
+version = "0.1.0"
 [[deps.Startup]]
 deps = ["PrecompileTools"]
 path = "Startup"
