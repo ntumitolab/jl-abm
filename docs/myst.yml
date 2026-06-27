@@ -23,7 +23,7 @@ site:
   options:
     folders: true
     logo_text: "Julia ABM"
-  favicon: favicon.ico
+    favicon: favicon.ico
   # logo: site_logo.png
   # style: ./my-style.css
   nav: []
