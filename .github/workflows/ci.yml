@@ -12,17 +12,17 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_NUM: '2'
-  LITERATE_PROC: '4'
+  CACHE_NUM: '1'
+  LITERATE_PROC: '6'
   JULIA_CI: 'true'
-  JULIA_NUM_THREADS: '1'
+  JULIA_NUM_THREADS: '2'
   OPENBLAS_NUM_THREADS: '1'
   NBCACHE: '.cache'
   JULIA_CONDAPKG_ENV: '@mpl'
 
 jobs:
   CI:
-    runs-on: ubuntu-24.04-arm
+    runs-on: self-hosted
     steps:
     - name: Checkout repository
       uses: actions/checkout@v7
