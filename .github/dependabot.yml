@@ -8,10 +8,14 @@ updates:
       gha-dependencies:
         patterns:
           - "*"
+    labels:
+      - automerge
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
+    labels:
+      - automerge
   # - package-ecosystem: "julia"
   #   directory: "/"
   #   schedule:
@@ -20,3 +24,5 @@ updates:
   #     all-julia-packages:
   #       patterns:
   #         - "*"
+  #   labels:
+  #     - automerge
