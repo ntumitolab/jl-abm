@@ -13,13 +13,12 @@ concurrency:
 
 env:
   CACHE_NUM: '1'
-  LITERATE_PROC: '6'
+  LITERATE_PROC: '2'
   JULIA_CI: 'true'
   JULIA_NUM_THREADS: '2'
+  JULIA_CPU_TARGET: 'sysimage'
   OPENBLAS_NUM_THREADS: '1'
   NBCACHE: '.cache'
-  JULIA_CONDAPKG_OFFLINE: 'true'
-  JULIA_CONDAPKG_BACKEND: 'Null'
 
 jobs:
   CI:
@@ -27,27 +26,15 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v7
-    - name: Setup Python
-      uses: actions/setup-python@v7
-      id: setup-python
-      with:
-        python-version: 3.x
-        cache: 'pip'
-    - name: Install Python deps
-      run: pip install -r requirements.txt
     - name: Read Julia version
       id: julia-version
-      run:
-        echo "resolved=$(python -c 'import tomllib; from pathlib import Path; print(tomllib.loads(Path("Manifest.toml").read_text())["julia_version"])')" >> "$GITHUB_OUTPUT"
+      run: echo "resolved=$(awk -F '"' '/^[[:space:]]*julia_version/ {print $2}' Manifest.toml)" >> "$GITHUB_OUTPUT"
     - name: Get environment hashes
       id: hash
       run: |
         echo "jl=${{ runner.os }}-${{ runner.arch }}-julia-${{ steps.julia-version.outputs.resolved }}" >> "$GITHUB_OUTPUT"
         echo "env=${{ env.CACHE_NUM }}-${{ hashFiles('Project.toml', 'Manifest.toml', 'Startup/**') }}" >> "$GITHUB_OUTPUT"
         echo "nb=${{ hashFiles('docs/**/*.jl', 'docs/**/*.ipynb') }}" >> "$GITHUB_OUTPUT"
-    - name: Set Julia CPU target (x64)
-      if: ${{ runner.arch == 'X64' }}
-      run: echo 'JULIA_CPU_TARGET=generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1)' >> $GITHUB_ENV
     - name: Cache executed notebooks
       uses: actions/cache@v6
       id: cache-nb
