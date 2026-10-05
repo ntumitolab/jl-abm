@@ -1,1 +1,1 @@
-# Agent-based modeling (ABM) Jupyter notebook examples
+# Agent-based modeling (ABM) examples in Julia
