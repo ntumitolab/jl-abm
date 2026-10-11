@@ -52,10 +52,10 @@ version = "0.1.45"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
-git-tree-sha1 = "7c2c19b5a26e601634bf718490b89d59685f122e"
+git-tree-sha1 = "dee8388a9bec89c8713ad176f96960ae2f98598a"
 registries = "General"
 uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
-version = "4.7.1"
+version = "4.7.4"
 weakdeps = ["SparseArrays", "StaticArrays"]
 
     [deps.Adapt.extensions]
@@ -70,10 +70,10 @@ version = "1.2.0"
 
 [[deps.Agents]]
 deps = ["CSV", "CommonSolve", "DataFrames", "DataStructures", "Distributed", "Distributions", "Downloads", "Graphs", "JLD2", "LazyArtifacts", "LightSumTypes", "LinearAlgebra", "MacroTools", "PrecompileTools", "ProgressMeter", "Random", "Rotations", "StaticArrays", "StatsBase", "StreamSampling", "StructArrays"]
-git-tree-sha1 = "a1dc1accb00efab2e4e3918584be01c6eb728be7"
+git-tree-sha1 = "62c207c9b76f8f2f1a5bd492237d251d04b3ed3b"
 registries = "General"
 uuid = "46ada45e-f475-11e8-01d0-f70cc89e6671"
-version = "7.0.4"
+version = "7.1.0"
 
     [deps.Agents.extensions]
     AgentsArrow = "Arrow"
@@ -599,10 +599,10 @@ version = "1.11.0"
 
 [[deps.FillArrays]]
 deps = ["LinearAlgebra"]
-git-tree-sha1 = "086b5fbd032baf544678cc15b52b015e4c4aceb8"
+git-tree-sha1 = "9741b45e1189f878eefe5789e6833dbdefc5adfa"
 registries = "General"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "1.17.1"
+version = "1.18.0"
 weakdeps = ["PDMats", "SparseArrays", "StaticArrays", "Statistics"]
 
     [deps.FillArrays.extensions]
@@ -1311,10 +1311,10 @@ version = "0.3.3"
 
 [[deps.OpenEXR_jll]]
 deps = ["Artifacts", "Imath_jll", "JLLWrappers", "Libdl", "Zlib_jll"]
-git-tree-sha1 = "1bcebd887dd33f1108210b3954049b1bb8af0e7a"
+git-tree-sha1 = "e9ae72527609bb66882d38ad009ffd47ca5713fb"
 registries = "General"
 uuid = "18a262bb-aa17-5467-a713-aee519bc75cb"
-version = "3.4.15+0"
+version = "3.4.16+0"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
@@ -1422,10 +1422,10 @@ version = "0.3.3"
 
 [[deps.PlotUtils]]
 deps = ["ColorSchemes", "Colors", "Dates", "PrecompileTools", "Printf", "Reexport", "Statistics"]
-git-tree-sha1 = "f20e945b895d2009c6c28d8bbf40a5cd846f7c2f"
+git-tree-sha1 = "ddcc36fd83fb4cd459a53c891981697bde0d3de6"
 registries = "General"
 uuid = "995b91a9-d308-5afd-9ec6-746e21dbc043"
-version = "1.5.0"
+version = "1.5.1"
 
 [[deps.PolygonOps]]
 git-tree-sha1 = "77b3d3605fc1cd0b42d95eba87dfcd2bf67d5ff6"
@@ -1593,10 +1593,10 @@ version = "0.5.2+0"
 
 [[deps.Roots]]
 deps = ["Accessors", "CommonSolve", "Printf"]
-git-tree-sha1 = "971f04b3780c0da4edf230573fc1aadc2c6e649e"
+git-tree-sha1 = "e6ffa7bd4f8d0b8744d18f219304738d952f9a37"
 registries = "General"
 uuid = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
-version = "3.0.10"
+version = "3.0.11"
 
     [deps.Roots.extensions]
     RootsChainRulesCoreExt = "ChainRulesCore"
@@ -1639,10 +1639,10 @@ version = "1.0.0"
 
 [[deps.SIMD]]
 deps = ["PrecompileTools"]
-git-tree-sha1 = "e24dc23107d426a096d3eae6c165b921e74c18e4"
+git-tree-sha1 = "1ed93b3c4ffd33cc0c5d17eeb46f1b504ce42731"
 registries = "General"
 uuid = "fdea26ae-647d-5447-a871-4b548cad5224"
-version = "3.7.2"
+version = "3.8.0"
 
 [[deps.ScopedValues]]
 deps = ["HashArrayMappedTries", "Logging"]
@@ -1756,10 +1756,10 @@ version = "0.1.0"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "PrecompileTools", "Random", "StaticArraysCore"]
-git-tree-sha1 = "39e70e0ab5d7f89833a62ab7c79df15d4fc417c1"
+git-tree-sha1 = "de349d5585559b692f518b6d3fc7c179d64b2364"
 registries = "General"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.9.22"
+version = "1.9.23"
 weakdeps = ["ChainRulesCore", "Statistics"]
 
     [deps.StaticArrays.extensions]
@@ -1811,10 +1811,10 @@ weakdeps = ["ChainRulesCore", "InverseFunctions"]
 
 [[deps.StreamSampling]]
 deps = ["Accessors", "DataStructures", "Distributions", "HybridStructs", "OnlineStatsBase", "PrecompileTools", "Random", "StatsBase"]
-git-tree-sha1 = "2e700386c3b14bf9c857ecf3f28b9b5886ae3f0e"
+git-tree-sha1 = "63e030df28fb8e6c39ddeaa0a00f82aef58554d9"
 registries = "General"
 uuid = "ff63dad9-3335-55d8-95ec-f8139d39e468"
-version = "0.8.2"
+version = "0.8.3"
 
 [[deps.StringManipulation]]
 deps = ["PrecompileTools", "StyledStrings"]
@@ -2109,10 +2109,10 @@ version = "2.0.4+0"
 
 [[deps.libpng_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Zlib_jll"]
-git-tree-sha1 = "32781be40fe86735af02eae0dd22754e4b5f779d"
+git-tree-sha1 = "1fcd6cf05d23adab0b5ffc496d020537215751dc"
 registries = "General"
 uuid = "b53b4c65-9356-5827-b1ea-8c7a1a84506f"
-version = "1.6.59+0"
+version = "1.6.59+1"
 
 [[deps.libsixel_jll]]
 deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "Libdl", "libpng_jll"]
