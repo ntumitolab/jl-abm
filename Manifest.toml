@@ -447,10 +447,10 @@ version = "1.1.0"
 
 [[deps.DataStructures]]
 deps = ["OrderedCollections"]
-git-tree-sha1 = "b0bc6d2cad1fed8b7fd59a1551a991cb3d2809e6"
+git-tree-sha1 = "50fc132ca085b05b7e09fe54447adc179c96df41"
 registries = "General"
 uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-version = "0.19.6"
+version = "0.19.7"
 
 [[deps.DataValueInterfaces]]
 git-tree-sha1 = "bfc1187b79289637fa0ef6d4436ebdfe6905cbd6"
@@ -483,10 +483,10 @@ version = "1.11.0"
 
 [[deps.Distributions]]
 deps = ["AliasTables", "FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "Roots", "SpecialFunctions", "Statistics", "StatsAPI", "StatsBase", "StatsFuns"]
-git-tree-sha1 = "478d3450b1cc56521d1d99ad923acf43f8813c6d"
+git-tree-sha1 = "dd1b020fc5b1326f310510244d72c10e4eacd0e5"
 registries = "General"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.25.134"
+version = "0.25.135"
 
     [deps.Distributions.extensions]
     DistributionsChainRulesCoreExt = "ChainRulesCore"
@@ -664,10 +664,10 @@ version = "0.8.6"
 
 [[deps.Fontconfig_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Expat_jll", "FreeType2_jll", "JLLWrappers", "Libdl", "Libuuid_jll", "Zlib_jll"]
-git-tree-sha1 = "e1e9ba3a8f5d71e6ae698f138a1362aeabb42e9f"
+git-tree-sha1 = "8de1957ed91ce3a9b03882a5759c151929a9aa06"
 registries = "General"
 uuid = "a3f928ae-7b40-5064-980b-68af3947d34b"
-version = "2.18.3+0"
+version = "2.18.4+0"
 
 [[deps.Format]]
 git-tree-sha1 = "9c68794ef81b08086aeb32eeaf33531668d5f5fc"
@@ -1112,6 +1112,13 @@ deps = ["Artifacts", "Pkg"]
 uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 version = "1.11.0"
 
+[[deps.LazyJLLWrappers]]
+deps = ["Artifacts", "Libdl", "Pkg", "Preferences", "TOML"]
+git-tree-sha1 = "4753919f2a12d14862eab9e4e4cfa2ed08af48d3"
+registries = "General"
+uuid = "21706172-204c-4d4f-5420-656854206f44"
+version = "1.2.7"
+
 [[deps.LazyModules]]
 git-tree-sha1 = "a560dd966b386ac9ae60bdd3a3d3a326062d3c3e"
 registries = "General"
@@ -1162,11 +1169,11 @@ uuid = "7e76a0d4-f3c7-5321-8279-8d96eeed0f29"
 version = "1.7.1+1"
 
 [[deps.Libiconv_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "be484f5c92fad0bd8acfef35fe017900b0b73809"
+deps = ["Artifacts", "LazyJLLWrappers", "Libdl"]
+git-tree-sha1 = "7b395350a0ba7cf31fd533af9f59ebc8eb144e08"
 registries = "General"
 uuid = "94ce4f54-9a6c-5748-9c1c-f9c7231a4531"
-version = "1.18.0+0"
+version = "1.18.1"
 
 [[deps.Libmount_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1345,10 +1352,10 @@ version = "1.3.6+0"
 
 [[deps.OnlineStatsBase]]
 deps = ["AbstractTrees", "Dates", "LinearAlgebra", "OrderedCollections", "Statistics", "StatsBase"]
-git-tree-sha1 = "55c519dfadb4d47970f5cd13bab27e640731598e"
+git-tree-sha1 = "2a76d9c156615c9bfcbd2d1d617c1193daec7b71"
 registries = "General"
 uuid = "925886fa-5bf2-5e8e-b522-a9147a512338"
-version = "1.7.3"
+version = "1.8.0"
 
 [[deps.OpenBLASConsistentFPCSR_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl"]
@@ -1867,22 +1874,22 @@ version = "1.8.0"
 
 [[deps.StatsBase]]
 deps = ["AliasTables", "DataAPI", "DataStructures", "IrrationalConstants", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
-git-tree-sha1 = "adb9da019510162e67a4493fc235c23203d8b09e"
+git-tree-sha1 = "85faad09701372d7cbd37f3d1acdc06986d495dc"
 registries = "General"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-version = "0.34.13"
+version = "0.34.14"
 
 [[deps.StatsFuns]]
 deps = ["HypergeometricFunctions", "IrrationalConstants", "LogExpFunctions", "Reexport", "Rmath", "SpecialFunctions"]
-git-tree-sha1 = "91a5737baed20ee31f3faea0e51f57461f6a689e"
+git-tree-sha1 = "8e2409a154c54afbd3d1a0c1da97d5e7e4397f26"
 registries = "General"
 uuid = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
-version = "2.2.1"
+version = "2.3.1"
 weakdeps = ["ChainRulesCore", "InverseFunctions"]
 
     [deps.StatsFuns.extensions]
-    StatsFunsChainRulesCoreExt = "ChainRulesCore"
-    StatsFunsInverseFunctionsExt = "InverseFunctions"
+    ChainRulesCoreExt = "ChainRulesCore"
+    InverseFunctionsExt = "InverseFunctions"
 
 [[deps.StreamSampling]]
 deps = ["Accessors", "DataStructures", "Distributions", "HybridStructs", "OnlineStatsBase", "PrecompileTools", "Random", "StatsBase"]
